@@ -60,6 +60,7 @@ pub(crate) fn shape(primary: Option<&Face>, s: &str, height: f64, width_factor: 
     catch_unwind(AssertUnwindSafe(|| shape_chars(primary, &chars, height, width_factor, oblique))).ok()
 }
 
+/// Lay out decoded directional runs, keeping advances and decoration spans for empty glyphs.
 fn shape_chars(primary: Option<&Face>, chars: &[(char, bool, bool)], height: f64, width_factor: f64, oblique: f64) -> Shaped {
     let h = if height.is_finite() && height > 0.0 { height } else { 1.0 };
     let wf = if width_factor.is_finite() && width_factor.abs() > 1e-6 { width_factor } else { 1.0 };
@@ -253,6 +254,7 @@ mod tests {
         Face::new(std::sync::Arc::new(bytes), 0).expect("synthetic font parses")
     }
 
+    /// Empty complex glyphs retain spacing and underlines without adding geometry or text slots.
     #[test]
     fn empty_complex_glyph_keeps_advance_without_geometry() {
         let face = empty_glyph_face();
