@@ -304,7 +304,7 @@ fn small_filled_text_on_screen_is_simplified_but_plots_keep_full_detail() {
     let Some(font) = system_font() else { return };
     let d = text_doc(font, "OOOO");
     let tris = |l: &DisplayList| l.prims.iter().filter(|p| p.kind == Kind::Tris).map(|p| l.points(p).len() / 3).sum::<usize>();
-    let plot = build(&d, &Space::Model, &Options::default());
+    let plot = build_plot(&d, &Space::Model, &Options::default());
     let full = tris(&plot);
     assert!(full > 100, "full-detail O glyphs are many triangles: {full}");
     // One pixel is a tenth of the cap height: the outlines are simplified, the shapes stay.
