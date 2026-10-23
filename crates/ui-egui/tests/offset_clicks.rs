@@ -59,4 +59,25 @@ fn offset_takes_a_clicked_distance_and_picks_its_source_under_grid_snap() {
     click(&mut h, Vec2::new(7.0, 2.04));
     let prompt = h.state().session.prompt_text();
     assert!(prompt.contains("side to offset"), "the line was not picked: {prompt}");
+    // A side click above the line (snapped to (5, 5)) makes the copy 5 units up, at y = 7.
+    click(&mut h, Vec2::new(7.0, 7.0));
+    let lines: Vec<(f64, f64)> = h
+        .state()
+        .session
+        .doc()
+        .unwrap()
+        .model
+        .iter()
+        .filter_map(|e| match &e.kind {
+            EntityKind::Line(line) => Some((line.a.y, line.b.y)),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(lines.len(), 2, "OFFSET added no line: {lines:?}");
+    assert!(lines.iter().any(|&(a, b)| (a - 7.0).abs() < 1e-9 && (b - 7.0).abs() < 1e-9), "no copy at y = 7: {lines:?}");
+    // OFFSET asks for the next object; Enter ends it.
+    assert!(h.state().session.prompt_text().contains("Select object to offset"), "{}", h.state().session.prompt_text());
+    h.key_press(egui::Key::Enter);
+    h.run_steps(2);
+    assert_eq!(h.state().session.prompt_text(), "Command:", "Enter ends OFFSET");
 }
