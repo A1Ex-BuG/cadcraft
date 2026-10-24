@@ -92,11 +92,25 @@ Copy-Item (Join-Path $Bin 'cadcraft.exe'), (Join-Path $Bin 'cadcraft-cli.exe') $
 
 & (Join-Path $PSScriptRoot 'sign.ps1') (Join-Path $Stage 'cadcraft.exe') (Join-Path $Stage 'cadcraft-cli.exe')
 
+# ---- font notices for the MSI ------------------------------------------------------------------
+# The portable ZIP already carries these notices; stage the complete files before MSI creation too.
+$Docs = Join-Path $Stage 'font-licences'
+New-Item -ItemType Directory -Force -Path $Docs | Out-Null
+$HasCraftFontLicences = 0
+if ($env:CRAFT_FONTS_DIR) {
+  foreach ($ofl in Get-ChildItem -Path (Join-Path $env:CRAFT_FONTS_DIR 'fonts\*\OFL.txt') -File -ErrorAction SilentlyContinue) {
+    Copy-Item -LiteralPath $ofl.FullName -Destination (Join-Path $Docs "OFL-$($ofl.Directory.Name).txt")
+    $HasCraftFontLicences = 1
+  }
+}
+# ---- end font notices for the MSI --------------------------------------------------------------
+
 # ---- MSI ---------------------------------------------------------------------------------------
 $Msi = Join-Path $Dist "cadcraft-$Version-windows-$Arch.msi"
 Invoke-Native 'wix build' {
   wix build (Join-Path $PSScriptRoot 'cadcraft.wxs') -arch $Arch -ext WixToolset.UI.wixext `
     -d "Version=$MsiVersion" -d "BinDir=$Stage" -d "IconPath=$(Join-Path $Root 'assets\app-icon\cadcraft.ico')" `
+    -d "DocsDir=$Docs" -d "HasCraftFontLicences=$HasCraftFontLicences" `
     -o $Msi
 }
 # wix writes its debug symbols (.wixpdb) next to the MSI; keep them out of the release assets.

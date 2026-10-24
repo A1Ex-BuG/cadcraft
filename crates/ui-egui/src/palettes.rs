@@ -151,7 +151,7 @@ pub fn toolsets(app: &mut CadApp, ui: &mut egui::Ui) {
             let w = 92.0;
             let tr = Rect::from_min_size(pos2(x, r.top()), vec2(w, tab_h));
             let active = app.ui.toolset_tab == name;
-            let resp = ui.interact(tr, ui.id().with(("ts", name)), Sense::click());
+            let resp = ui.interact(tr, ui.scope_id().with(("ts", name)), Sense::click());
             p.rect_filled(tr, 0.0, if active { t.tab_active } else { t.chrome });
             p.text(
                 tr.center(),
@@ -168,7 +168,7 @@ pub fn toolsets(app: &mut CadApp, ui: &mut egui::Ui) {
         }
         p.rect_filled(Rect::from_min_max(pos2(x, r.top()), pos2(r.right(), r.top() + tab_h)), 0.0, t.chrome);
         let cr = Rect::from_center_size(pos2(r.right() - 14.0, r.top() + tab_h / 2.0), vec2(14.0, 14.0));
-        let cresp = ui.interact(cr, ui.id().with("ts_collapse"), Sense::click());
+        let cresp = ui.interact(cr, ui.scope_id().with("ts_collapse"), Sense::click());
         icons::paint(&p, cr, Icon::ChevronLeft, false);
         icons::describe_control(ui, &cresp, "Collapse Tool Sets", None, false);
         if cresp.on_hover_text(crate::tl!("Collapse Tool Sets")).clicked() {
@@ -202,7 +202,7 @@ pub fn toolsets(app: &mut CadApp, ui: &mut egui::Ui) {
                         t.text,
                     );
                     let gear = Rect::from_center_size(pos2(hr.right() - 12.0, hr.center().y), vec2(13.0, 13.0));
-                    let gresp = ui.interact(gear, ui.id().with(("ts_gear", name)), Sense::click());
+                    let gresp = ui.interact(gear, ui.scope_id().with(("ts_gear", name)), Sense::click());
                     icons::paint(pp, Rect::from_center_size(gear.center(), vec2(11.0, 11.0)), Icon::Gear, false);
                     icons::describe_control(ui, &hresp, name, Some(!collapsed), false);
                     icons::describe_control(ui, &gresp, &format!("{name} options"), None, false);
@@ -329,7 +329,7 @@ pub fn toolsets_strip(app: &mut CadApp, ui: &mut egui::Ui) {
     let t = Tokens::get();
     egui::Panel::left("cc_toolsets_strip").exact_size(22.0).resizable(false).frame(egui::Frame::NONE.fill(t.chrome)).show(ui, |ui| {
         let r = ui.max_rect();
-        let resp = ui.interact(r, ui.id().with("ts_expand"), Sense::click());
+        let resp = ui.interact(r, ui.scope_id().with("ts_expand"), Sense::click());
         icons::paint(ui.painter(), Rect::from_center_size(pos2(r.center().x, r.top() + 14.0), vec2(14.0, 14.0)), Icon::ChevronRight, false);
         icons::describe_control(ui, &resp, "Expand Tool Sets", None, false);
         if resp.on_hover_text(crate::tl!("Tool Sets")).clicked() {
@@ -354,7 +354,7 @@ pub fn right_palettes(app: &mut CadApp, ui: &mut egui::Ui) {
             icons::paint(&p, br, *icon, false);
         }
         let cr = Rect::from_center_size(pos2(r.right() - 14.0, r.top() + tab_h / 2.0), vec2(14.0, 14.0));
-        let cresp = ui.interact(cr, ui.id().with("palettes_collapse"), Sense::click());
+        let cresp = ui.interact(cr, ui.scope_id().with("palettes_collapse"), Sense::click());
         icons::paint(&p, cr, Icon::ChevronRight, false);
         icons::describe_control(ui, &cresp, "Collapse Palettes", None, false);
         if cresp.on_hover_text(crate::tl!("Collapse Palettes")).clicked() {
@@ -520,9 +520,10 @@ fn prop_row(ui: &mut egui::Ui, label: &str, add: impl FnOnce(&mut egui::Ui)) {
         let mut job = egui::text::LayoutJob::simple(crate::i18n::t(label).to_string(), crate::theme::body(), t.text_dim, 106.0);
         job.halign = egui::Align::RIGHT;
         let galley = ui.painter().layout_job(job);
-        let (lr, _) = ui.allocate_exact_size(vec2(118.0, galley.size().y.max(22.0)), Sense::hover());
+        let (lr, label_response) = ui.allocate_exact_size(vec2(118.0, galley.size().y.max(22.0)), Sense::hover());
+        label_response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Label, ui.is_enabled(), crate::i18n::t(label)));
         ui.painter().galley(pos2(lr.right() - 6.0, lr.center().y - galley.size().y / 2.0), galley, t.text_dim);
-        add(ui);
+        ui.label_inputs_by(label_response.id, add);
     });
 }
 
@@ -612,7 +613,7 @@ type Custom = Option<(String, Vec<cadcraft_engine::doc::dynblock::CustomProperty
 /// drawing revision.
 fn custom_properties(ui: &egui::Ui, app: &CadApp, h: cadcraft_engine::doc::Handle) -> Custom {
     let st = app.session.state().ok()?;
-    let id = egui::Id::new(("dynamic-block-custom", st.uid, st.revision, h));
+    let id = egui::Id::unique(("dynamic-block-custom", st.uid, st.revision, h));
     if let Some(c) = ui.data(|d| d.get_temp::<Custom>(id)) {
         return c;
     }
@@ -639,7 +640,7 @@ fn properties_header(app: &mut CadApp, ui: &mut egui::Ui) {
     ui.painter().rect_filled(if app.ui.properties_all { half } else { my }, 3.0, t.control);
     ui.painter().text(half.center(), egui::Align2::CENTER_CENTER, crate::tl!("All"), crate::theme::small(), t.text);
     ui.painter().text(my.center(), egui::Align2::CENTER_CENTER, crate::tl!("My"), crate::theme::small(), t.text_faint);
-    ui.interact(my, ui.id().with("prop_my"), Sense::hover()).on_hover_text(crate::tl!("My properties: not available yet"));
+    ui.interact(my, ui.scope_id().with("prop_my"), Sense::hover()).on_hover_text(crate::tl!("My properties: not available yet"));
     let sel = app.session.selection();
     let pickadd = app.session.settings.pickadd;
     let Ok(d) = app.session.doc() else { return };
@@ -757,7 +758,7 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
             }
         });
         prop_row(ui, "Linetype scale", |ui| {
-            if let Some(f) = number(edit_field(ui, ui.id().with("cur_celtscale"), format!("{:.4}", h.f64("CELTSCALE", 1.0))), &mut bad) {
+            if let Some(f) = number(edit_field(ui, ui.scope_id().with("cur_celtscale"), format!("{:.4}", h.f64("CELTSCALE", 1.0))), &mut bad) {
                 act("setvar", json!({ "name": "CELTSCALE", "value": f }));
             }
         });
@@ -779,7 +780,7 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
         });
         prop_row(ui, "Transparency", |ui| unavailable(ui, "ByLayer"));
         prop_row(ui, "Thickness", |ui| {
-            if let Some(f) = number(edit_field(ui, ui.id().with("cur_thickness"), len(h.f64("THICKNESS", 0.0))), &mut bad) {
+            if let Some(f) = number(edit_field(ui, ui.scope_id().with("cur_thickness"), len(h.f64("THICKNESS", 0.0))), &mut bad) {
                 act("setvar", json!({ "name": "THICKNESS", "value": f }));
             }
         });
@@ -805,7 +806,7 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
         });
         prop_row(ui, "Annotation scale", |ui| unavailable(ui, "1:1"));
         prop_row(ui, "Text height", |ui| {
-            if let Some(f) = number(edit_field(ui, ui.id().with("cur_textsize"), len(h.f64("TEXTSIZE", 0.2))), &mut bad) {
+            if let Some(f) = number(edit_field(ui, ui.scope_id().with("cur_textsize"), len(h.f64("TEXTSIZE", 0.2))), &mut bad) {
                 act("setvar", json!({ "name": "TEXTSIZE", "value": f }));
             }
         });
@@ -888,7 +889,7 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
         let width = (ui.available_width() - 10.0).max(0.0);
         if let Some(c) = crate::layers::color_button_resolved(
             ui,
-            egui::Id::new(("properties_color", &ids)),
+            egui::Id::unique(("properties_color", &ids)),
             selected_color.unwrap_or(Color::ByLayer),
             resolved_color,
             &color,
@@ -924,7 +925,7 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
         });
     });
     prop_row(ui, "Linetype scale", |ui| {
-        if let Some(f) = number(edit_field(ui, ui.id().with(("lts", &ids)), lts.clone()), &mut bad) {
+        if let Some(f) = number(edit_field(ui, ui.scope_id().with(("lts", &ids)), lts.clone()), &mut bad) {
             set = Some(json!({ "handles": ids, "ltscale": f }));
         }
     });
@@ -954,7 +955,7 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
             }
             ui.separator();
             // A fixed percentage, committed when the drag or edit ends.
-            let tid = egui::Id::new(("prop_tr", &ids));
+            let tid = egui::Id::unique(("prop_tr", &ids));
             let cur = tr.parse::<u8>().ok();
             let mut pct = ui.data_mut(|d| d.get_temp::<u8>(tid)).or(cur).unwrap_or(0);
             ui.horizontal(|ui| {
@@ -979,7 +980,7 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
         let angles = app.session.angle_settings();
         let num = |ui: &mut egui::Ui, label: &str, key: &str, shown: String, set: &mut Option<Value>, bad: &mut Option<String>, ids: &Vec<String>| {
             prop_row(ui, label, |ui| {
-                if let Some(f) = number(edit_field(ui, ui.id().with((key, ids)), shown), bad) {
+                if let Some(f) = number(edit_field(ui, ui.scope_id().with((key, ids)), shown), bad) {
                     *set = Some(json!({ "handles": ids, key: f }));
                 }
             });
@@ -987,22 +988,22 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
         match &e.kind {
             EntityKind::Line(l) => {
                 prop_row(ui, "Start X", |ui| {
-                    if let Some(f) = number(edit_field(ui, ui.id().with(("sx", &ids)), len(l.a.x)), &mut bad) {
+                    if let Some(f) = number(edit_field(ui, ui.scope_id().with(("sx", &ids)), len(l.a.x)), &mut bad) {
                         set = Some(json!({ "handles": ids, "start": [f, l.a.y] }));
                     }
                 });
                 prop_row(ui, "Start Y", |ui| {
-                    if let Some(f) = number(edit_field(ui, ui.id().with(("sy", &ids)), len(l.a.y)), &mut bad) {
+                    if let Some(f) = number(edit_field(ui, ui.scope_id().with(("sy", &ids)), len(l.a.y)), &mut bad) {
                         set = Some(json!({ "handles": ids, "start": [l.a.x, f] }));
                     }
                 });
                 prop_row(ui, "End X", |ui| {
-                    if let Some(f) = number(edit_field(ui, ui.id().with(("ex", &ids)), len(l.b.x)), &mut bad) {
+                    if let Some(f) = number(edit_field(ui, ui.scope_id().with(("ex", &ids)), len(l.b.x)), &mut bad) {
                         set = Some(json!({ "handles": ids, "end": [f, l.b.y] }));
                     }
                 });
                 prop_row(ui, "End Y", |ui| {
-                    if let Some(f) = number(edit_field(ui, ui.id().with(("ey", &ids)), len(l.b.y)), &mut bad) {
+                    if let Some(f) = number(edit_field(ui, ui.scope_id().with(("ey", &ids)), len(l.b.y)), &mut bad) {
                         set = Some(json!({ "handles": ids, "end": [l.b.x, f] }));
                     }
                 });
@@ -1038,7 +1039,7 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
             }
             EntityKind::Text(tx) => {
                 prop_row(ui, "Contents", |ui| {
-                    if let Some(s) = edit_field(ui, ui.id().with(("txt", &ids)), tx.value.clone()) {
+                    if let Some(s) = edit_field(ui, ui.scope_id().with(("txt", &ids)), tx.value.clone()) {
                         set = Some(json!({ "handles": ids, "text": s }));
                     }
                 });
@@ -1048,7 +1049,7 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
             }
             EntityKind::MText(tx) => {
                 prop_row(ui, "Contents", |ui| {
-                    if let Some(s) = edit_field(ui, ui.id().with(("mtxt", &ids)), tx.contents.clone()) {
+                    if let Some(s) = edit_field(ui, ui.scope_id().with(("mtxt", &ids)), tx.contents.clone()) {
                         set = Some(json!({ "handles": ids, "text": s }));
                     }
                 });
@@ -1084,7 +1085,7 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
             }
             EntityKind::Dimension(dm) => {
                 prop_row(ui, "Text override", |ui| {
-                    if let Some(s) = edit_field(ui, ui.id().with(("dimtxt", &ids)), dm.text.clone()) {
+                    if let Some(s) = edit_field(ui, ui.scope_id().with(("dimtxt", &ids)), dm.text.clone()) {
                         set = Some(json!({ "handles": ids, "textOverride": s }));
                     }
                 });
@@ -1123,7 +1124,7 @@ pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
                         prop_row(ui, &p.name, |ui| {
                             let picked = match (p.editable, p.choices.is_empty()) {
                                 (true, false) => pick_menu(ui, &p.value, p.choices.iter().cloned()),
-                                (true, true) => edit_field(ui, ui.id().with(("dynprop", e.handle, &p.name)), p.value.clone()),
+                                (true, true) => edit_field(ui, ui.scope_id().with(("dynprop", e.handle, &p.name)), p.value.clone()),
                                 (false, _) => {
                                     read_only(ui, &p.value);
                                     None

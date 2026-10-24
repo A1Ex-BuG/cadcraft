@@ -637,6 +637,9 @@ impl Default for MLeaderOptions {
 pub struct Session {
     pub docs: Vec<DocState>,
     pub active: usize,
+    /// Monotonic count of changes to the open drawings and the active one. A screenshot queued
+    /// across a switch is rejected even when a later switch returns to the same drawing.
+    pub doc_epoch: u64,
     pub settings: Settings,
     pub running: Option<Running>,
     /// A script is running ([`Session::script`]); a SCRIPT command inside it is refused.
@@ -717,6 +720,7 @@ impl Session {
         Session {
             docs: Vec::new(),
             active: 0,
+            doc_epoch: 0,
             settings: Settings::default(),
             running: None,
             in_script: false,
@@ -757,6 +761,7 @@ impl Session {
         self.end_running();
         self.docs.push(st);
         self.active = self.docs.len() - 1;
+        self.bump_doc_epoch();
         self.active
     }
     pub fn open_drawing(&mut self, d: Drawing, title: &str, path: Option<String>) -> usize {
@@ -771,8 +776,14 @@ impl Session {
         self.end_running();
         self.docs.push(st);
         self.active = self.docs.len() - 1;
+        self.bump_doc_epoch();
         self.active
     }
+    /// Record that which drawing is open or active changed (screenshot binding).
+    pub fn bump_doc_epoch(&mut self) {
+        self.doc_epoch = self.doc_epoch.wrapping_add(1);
+    }
+
     /// A command still waiting for input belongs to the drawing it started in: end it there
     /// before another drawing becomes current, so its undo step lands in that drawing.
     fn end_running(&mut self) {
@@ -790,6 +801,7 @@ impl Session {
             Err(_) => {
                 self.docs.truncate(n);
                 self.active = self.active.min(self.docs.len().saturating_sub(1));
+                self.bump_doc_epoch();
                 Err(EngineError::Internal("open".into(), "panic".into()))
             }
         }

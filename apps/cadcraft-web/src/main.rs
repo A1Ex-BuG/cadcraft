@@ -30,16 +30,19 @@ mod web {
 
     impl eframe::App for Shell {
         fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-            self.1.take_dropped(ctx);
+            // Background reads are consume-based and run on hidden ticks too. Dropped files are
+            // input and are read from `ui` only.
             self.1.drain(&mut self.0);
             self.0.system_animations = self.3.as_ref().map(|reduced| !reduced.matches());
             self.0.logic(ctx);
+            // `DirtyReport` suppresses duplicates, so reporting after every logic callback
+            // (including a hidden tab's) is idempotent and keeps the parent's guard current.
             if let Some((bridge, reported)) = &self.2 {
                 bridge.report_dirty(&self.0, reported);
             }
         }
         fn raw_input_hook(&mut self, ctx: &egui::Context, raw: &mut egui::RawInput) {
-            self.0.raw_input_hook(raw);
+            self.0.raw_input_hook(ctx, raw);
             cadcraft_ui_egui::cmdline::capture_tab(ctx, raw);
         }
         /// Preferences (interface theme and language) survive reloads; egui state is not kept.
@@ -51,10 +54,13 @@ mod web {
             false
         }
         fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-            self.0.ui(ui);
-            if let Some((bridge, reported)) = &self.2 {
-                bridge.report_dirty(&self.0, reported);
+            let first_pass = ui.ctx().current_pass_index() == 0;
+            if first_pass {
+                // `take_dropped` consumes the raw list; a second pass or hidden tick cannot
+                // re-read the same file.
+                self.1.take_dropped(ui.ctx());
             }
+            self.0.ui(ui);
         }
     }
 
