@@ -119,7 +119,7 @@ fn style(s: &Session) -> String {
     s.doc().map(|d| d.header.str("DIMSTYLE", "Standard")).unwrap_or_else(|_| "Standard".into())
 }
 
-fn dim(s: &Session, kind: DimKind, defpt: Vec2, p13: Vec2, p14: Vec2, p15: Vec2, text: &str) -> EntityKind {
+fn dim(s: &Session, kind: DimKind, defpt: Vec2, p13: Vec2, p14: Vec2, p15: Vec2, p16: Vec2, text: &str) -> EntityKind {
     EntityKind::Dimension(Dimension {
         kind,
         defpt: v3(defpt),
@@ -127,7 +127,7 @@ fn dim(s: &Session, kind: DimKind, defpt: Vec2, p13: Vec2, p14: Vec2, p15: Vec2,
         p13: v3(p13),
         p14: v3(p14),
         p15: v3(p15),
-        p16: v3(Vec2::ZERO),
+        p16: v3(p16),
         text: text.into(),
         style: style(s),
         measurement: 0.0,
