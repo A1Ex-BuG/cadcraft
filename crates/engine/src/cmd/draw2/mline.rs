@@ -13,7 +13,9 @@ use super::super::distinct_points;
 use super::super::machines::number;
 use super::super::ok;
 use super::curves::{self, MAX_GEN};
-use super::*;
+use super::machines::number;
+use super::{CommandSpec, bad, bool_or, distinct_points, f64_or, line, ok, point_req, points_param, str_param};
+
 use crate::{Accept, EngineError, Input, Interactive, Prompt, Result, Session, Step};
 
 pub fn specs() -> Vec<CommandSpec> {
