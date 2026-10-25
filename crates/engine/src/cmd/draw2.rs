@@ -1684,10 +1684,9 @@ impl RectM2 {
         }
         let first = self.origin(w, h).unwrap_or(a);
         let hd = s.add_entity(rect_kind(first, (w, h), self.rotation, self.fillet, self.chamfer, self.width, self.elevation))?;
-        if self.thickness != 0.0 {
-            let t = self.thickness;
-            s.doc_mut()?.modify_entity(hd, |e| e.common.thickness = t)?;
-        }
+        // A rectangle has its own thickness option and does not take THICKNESS.
+        let t = self.thickness;
+        s.doc_mut()?.modify_entity(hd, |e| e.common.thickness = t)?;
         Ok(Step::Done)
     }
     /// The rectangle's local origin (the corner `rect_kind` draws from) for a size: the first
