@@ -10,7 +10,7 @@ use cadcraft_doc::{DimKind, DimStyle, Dimension};
 use cadcraft_fonts::{MTextParams, TextFont};
 use cadcraft_geom::{Arc, Vec2, ccw_sweep};
 
-use crate::units::{NumFormat, format_angle, format_decimal, format_linear};
+use crate::units::{NumFormat, format_angle_with_separator, format_decimal, format_linear};
 
 /// Most DIMBREAK gaps drawn per dimension.
 const MAX_BREAKS: usize = 1000;
@@ -53,6 +53,22 @@ pub struct DimGeometry {
 }
 
 impl DimGeometry {
+    /// `value` as the contents of a plain MTEXT (the dimension's `*D` block, its EXPLODE
+    /// pieces): the diameter sign as `%%c`, not the decoded ⌀ (U+2300), which no SHX font has,
+    /// so other programs plot nothing for it, while every font draws `%%c` (#1645). A `%`
+    /// that would run into a code is written `%%%`.
+    pub fn mtext_contents(&self) -> String {
+        let mut out = String::with_capacity(self.value.len() + 2);
+        let mut chars = self.value.chars().peekable();
+        while let Some(c) = chars.next() {
+            match c {
+                '⌀' => out.push_str("%%c"),
+                '%' if matches!(chars.peek(), Some('%' | '⌀')) => out.push_str("%%%"),
+                c => out.push(c),
+            }
+        }
+        out
+    }
     fn dim(&mut self, l: Vec<Vec2>) {
         if l.len() >= 2 {
             self.lines.push(l);
@@ -141,7 +157,7 @@ pub enum Arrowhead {
 impl Arrowhead {
     /// Parse a DIMBLK value ("" / "_DOT" / "Architectural tick" / "closed blank"…).
     pub fn parse(name: &str) -> Arrowhead {
-        let n: String = name.trim().trim_start_matches('_').chars().filter(|c| c.is_ascii_alphanumeric()).collect::<String>().to_ascii_lowercase();
+        let n: String = name.trim().trim_start_matches('_').chars().filter(char::is_ascii_alphanumeric).collect::<String>().to_ascii_lowercase();
         match n.as_str() {
             "" | "closedfilled" | "filled" => Arrowhead::ClosedFilled,
             "closedblank" | "blank" => Arrowhead::ClosedBlank,
@@ -887,7 +903,7 @@ pub fn dimension_geometry_with(d: &Dimension, st: &DimStyle, dimscale: f64, font
             g.measurement = sweep;
             // DIMAZIN 1 / 2 suppress leading / trailing zeros (DIMZIN's bits 4 / 8).
             let azin = (st.angular_zero_suppression & 3) * 4;
-            let txt = format_angle(sweep, st.angular_unit, st.angular_decimals, azin);
+            let txt = format_angle_with_separator(sweep, st.angular_unit, st.angular_decimals, azin, &st.decimal_separator);
             // DIMPOST is a linear-dimension prefix/suffix; angles have their own format only.
             g.mtext = inspected(apply_override(&txt, d), d);
             let mut pts = Vec::new();
@@ -1381,6 +1397,7 @@ mod tests {
         d.defpt = Vec3::new(-3.0, 0.0, 0.0);
         let g = dimension_geometry(&d, &st_with(|s| s.decimals = 1), 1.0);
         assert_eq!(g.value, "⌀6.0");
+        assert_eq!(g.mtext_contents(), "%%c6.0", "the *D block's text (#1645)");
         let mut a = lin((10.0, 0.0), (0.0, 10.0), (3.0, 3.0), 0.0);
         a.kind = DimKind::Angular3P;
         a.p15 = Vec3::ZERO;
@@ -1429,6 +1446,28 @@ mod tests {
         d.p15 = Vec3::new(f64::NAN, 0.0, 0.0);
         let g = dimension_geometry(&d, &DimStyle::default(), 1.0);
         assert!(g.lines.is_empty() && g.fills.is_empty(), "{:?}", g.lines);
+    }
+
+    /// #1645: the MTEXT contents give back the dimension's text when decoded, with the diameter
+    /// sign as `%%c` (no SHX font has U+2300) and a `%` that would start a code escaped.
+    #[test]
+    fn mtext_contents_write_the_diameter_sign_as_a_code() {
+        let with = |v: &str| DimGeometry { value: v.into(), ..DimGeometry::default() };
+        for (value, contents) in [
+            ("⌀60", "%%c60"),
+            ("2x ⌀8.5 THRU", "2x %%c8.5 THRU"),
+            ("R3.0", "R3.0"),
+            ("36.9° ±0.1", "36.9° ±0.1"),
+            ("50%", "50%"),
+            ("5%⌀6", "5%%%%%c6"),
+            ("%%", "%%%%"),
+            ("", ""),
+        ] {
+            let g = with(value);
+            assert_eq!(g.mtext_contents(), contents, "{value:?}");
+            assert_eq!(decode_value(&g.mtext_contents()), value, "{value:?} reads back");
+            assert!(!g.mtext_contents().contains('⌀'));
+        }
     }
 }
 

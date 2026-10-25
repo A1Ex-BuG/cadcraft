@@ -234,7 +234,7 @@ fn toolbar(ui: &mut egui::Ui, st: &mut State, base_h: f64) {
             .width(120.0)
             .selected_text(shown.clone())
             .show_ui(ui, |ui| {
-                for fam in FAMILIES.iter().map(|s| s.to_string()).chain(cur.font.clone().filter(|f| !FAMILIES.contains(&f.as_str()))) {
+                for fam in FAMILIES.iter().map(ToString::to_string).chain(cur.font.clone().filter(|f| !FAMILIES.contains(&f.as_str()))) {
                     if ui.selectable_label(shown == fam, &fam).clicked() {
                         change(st, |c| c.font = Some(fam.clone()));
                         refocus = true;

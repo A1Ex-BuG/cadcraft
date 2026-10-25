@@ -34,12 +34,17 @@ pub fn specs() -> Vec<CommandSpec> {
     ]
 }
 
+/// The tolerance curves are flattened with for boundary tracing, in a space with extents `ext`.
+pub(super) fn outline_tol(ext: Bounds2) -> f64 {
+    (ext.width() + ext.height()).max(1e-9) / 20000.0
+}
+
 /// Tessellated outlines of every visible curve in the space (hatch boundary candidates), each
 /// with the handle of the object it came from.
 fn outlines(d: &Drawing, space: &Space, near: Option<Bounds2>) -> (Vec<Vec<Vec2>>, Vec<Handle>) {
     let Some(store) = d.space(space) else { return (Vec::new(), Vec::new()) };
     let ext = d.extents(space);
-    let tol = (ext.width() + ext.height()).max(1e-9) / 20000.0;
+    let tol = outline_tol(ext);
     let mut out = Vec::new();
     let mut owners = Vec::new();
     for e in store.iter() {
@@ -113,7 +118,8 @@ fn closed_loop(d: &Drawing, e: &Entity) -> Option<Vec<PolyVertex>> {
 }
 
 /// Open curves that can make up an island together (a square drawn as four LINEs, two ARCs
-/// forming a circle). Closed objects are islands on their own (see `closed_loop`).
+/// forming a circle, the inner lines of multiline walls around a room). Closed objects are
+/// islands on their own (see `closed_loop`).
 fn island_curve(d: &Drawing, e: &Entity) -> bool {
     matches!(
         e.kind,
@@ -123,6 +129,7 @@ fn island_curve(d: &Drawing, e: &Entity) -> bool {
             | EntityKind::LwPolyline(_)
             | EntityKind::Polyline3d(_)
             | EntityKind::Spline(_)
+            | EntityKind::MLine(_)
     ) && closed_loop(d, e).is_none()
 }
 
@@ -204,6 +211,8 @@ pub(crate) fn loops_at(s: &Session, p: Vec2) -> Result<Vec<HatchLoop>> {
     let ext = d.extents(&space);
     let tol = ((ext.width() + ext.height()) * 1e-9).max(1e-9);
     let (polys, owners) = outlines(d, &space, None);
+    // A line that ends on a flattened curve (an ellipse) can stop short of its chords.
+    let polys = cadcraft_geom::region::snap_ends(&polys, outline_tol(ext), tol);
     let found = cadcraft_geom::region::boundary_at_gap(&polys, p, tol, gap_tolerance(d))
         .ok_or_else(|| EngineError::Other("Valid hatch boundary not found.".into()))?;
     let outer = found.outer;

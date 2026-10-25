@@ -1,5 +1,11 @@
 # CADCraft — egui 0.37 migration plan
 
+Current landing status, 2026-10-25: the implementation integrates main `fcfdf33001cf2462bdafb6e1237becd8ef0ea1cb` and selects egui `6d518fc799681571963842f95b55a6b68431b15a`, winit `a517b3846ee8457d84ee4975110bfda6797c44dc`, shared UI `25da1314d443171b4adeaad2cd9454b273f35c6f` and independent PDF/document-path revisions in the lockfile. Full managed CI0300 passed all seven stages, with 2,448 passing tests, no failures and one ignored across 103 summaries. Fresh review0320 verified the tested source, all seven latest-main paths and all 13 new source files.
+
+The review also identified inherited upstream issues in MEASUREINIT reset/web startup and PDF font hardening; these are carried explicitly in the review packet. The egui licence-source URL has been updated to the selected revision; the font bytes are unchanged. Final notice validation is pending. Current-source Windows/macOS/FreeBSD, visible GUI, native IME and performance acceptance are not established by the Linux CI result. Human review and human merge are required.
+
+The original planning and research record follows; its baseline pins and planning-only status are historical.
+
 Status: **planning only**. This document changes no production code, manifest, lockfile,
 branch, tag, PR or release. No build, test or GUI run was performed while writing it.
 Every future push or new PR requires fresh, explicit human approval after the exact
