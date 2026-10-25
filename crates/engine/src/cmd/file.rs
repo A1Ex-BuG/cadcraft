@@ -11,7 +11,7 @@ use cadcraft_doc::Drawing;
 pub use cadcraft_dxf::Version;
 use serde_json::{Value, json};
 
-use super::{CommandSpec, EngineError, Interactive, always, bad, bool_or, ok, str_param};
+use super::{CommandSpec, EngineError, Interactive, always, bad, bool_or, find_command, ok, str_param};
 
 use crate::{Accept, Input, Prompt, Result, Session, Step};
 
