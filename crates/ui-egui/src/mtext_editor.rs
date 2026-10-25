@@ -222,6 +222,7 @@ fn set_flag(c: &mut CharFmt, f: Flag, on: bool) {
     }
 }
 
+/// MTEXT formatting toolbar for the current selection: font, height, bold/italic/underline/overline, colour, alignment, lists, tab, degree/plus-minus and Diameter. Font, bold/italic/underline/overline, ByLayer/palette colour, alignment, list, tab and special-character changes refocus the editor; height and custom RGB colour changes do not.
 fn toolbar(ui: &mut egui::Ui, st: &mut State, base_h: f64) {
     let cur = current(st);
     let range = st.sel.0.min(st.sel.1)..st.sel.0.max(st.sel.1);
@@ -345,6 +346,7 @@ enum FormattingIcon {
     Tab,
 }
 
+/// Glyph-only MTEXT toolbar button: paints `icon`, exposes `label` as its accessible name and tooltip, and returns whether it was clicked.
 fn formatting_button(ui: &mut egui::Ui, icon: FormattingIcon, label: &str, selected: bool) -> bool {
     let response = ui
         .add(egui::Button::new(" ").selected(selected).min_size(vec2(22.0, ui.spacing().interact_size.y)))
@@ -502,6 +504,7 @@ fn ruler(ui: &mut egui::Ui, st: &mut State, px: f32, width: f32, base_h: f64) {
     bg.on_hover_text(crate::tl!("Click the ruler to add a tab stop, right-click to remove one"));
 }
 
+/// MTEXT editor area with the formatted preview; restores a pending caret position before laying text out with `base_h`, `px`, `width` and the theme tokens.
 fn text_box(ui: &mut egui::Ui, st: &mut State, base_h: f64, px: f32, width: f32, t: &Tokens) {
     let id = edit_id();
     if let Some(at) = st.caret.take()
@@ -597,6 +600,7 @@ mod tests {
 
     use crate::Services;
 
+    /// Clicking Diameter inserts U+2300 into both the formatted text and `to_contents()`, selects it, and leaves no unnamed widget.
     #[test]
     fn diameter_insertion_keeps_real_text_and_renders_without_optional_fonts() {
         let state = State { fmt: Formatted::default(), typing: CharFmt::default(), typing_at: 0, top: 70.0, sel: (0, 0), caret: None };
@@ -616,6 +620,7 @@ mod tests {
         assert!(harness.unnamed_widgets().is_empty());
     }
 
+    /// The ten toolbar controls listed in the test are found by semantic name under the harness's default bundled fonts, and no toolbar widget is unnamed.
     #[test]
     fn the_whole_toolbar_uses_bundled_glyphs_and_names_its_controls() {
         let mut state = State { fmt: Formatted::default(), typing: CharFmt::default(), typing_at: 0, top: 70.0, sel: (0, 0), caret: None };

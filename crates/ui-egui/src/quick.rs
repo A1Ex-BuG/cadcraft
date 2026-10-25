@@ -59,6 +59,7 @@ fn pretty(k: &str) -> String {
     out
 }
 
+/// Quick Select window; caches `qselect.info` per drawing, apply-to choice and object type, then runs the selection with the chosen criteria.
 pub fn qselect_dialog(app: &mut CadApp, ctx: &egui::Context, open: &mut bool) {
     let t = Tokens::get();
     let sid = egui::Id::unique("qselect_state");
@@ -229,6 +230,7 @@ struct QpState {
     at: Option<Pos2>,
 }
 
+/// Quick Properties numeric row: an expression or distance field labelled by `label`; commits only a finite value under `key` into `set`.
 fn num_row(ui: &mut egui::Ui, label: &str, id: egui::Id, v: f64, set: &mut Option<(String, Value)>, key: &str) {
     let label = ui.label(RichText::new(crate::i18n::t(label)).color(Tokens::get().text_dim));
     let s = format!("{v:.4}");

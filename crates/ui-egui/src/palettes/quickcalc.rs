@@ -216,6 +216,7 @@ fn value_row(ui: &mut egui::Ui, value: &mut String) {
     ui.add(egui::TextEdit::singleline(value).hint_text(crate::tl!("Value")).desired_width(120.0)).labelled_by(label.id);
 }
 
+/// Quick Calculator dock body: expression entry with evaluation, variables and unit conversion.
 pub fn show(app: &mut CadApp, ui: &mut egui::Ui) {
     let t = Tokens::get();
     let mut st: State = ui.ctx().data_mut(|d| d.get_temp(id())).unwrap_or_default();

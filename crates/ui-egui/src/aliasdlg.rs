@@ -143,6 +143,7 @@ pub fn apply(app: &mut CadApp) -> bool {
     }
 }
 
+/// Command Aliases window that edits the in-memory alias set in `app.alias_dlg`; OK/Apply send the differences to ALIASEDIT, read the resulting aliases and source file back, and show any error.
 pub fn dialog(app: &mut CadApp, ctx: &egui::Context, open: &mut bool) {
     if app.alias_dlg.is_none() {
         crate::aliasdlg::open(app);

@@ -483,6 +483,7 @@ fn korean_ui_fonts_cover_the_language_picker_in_both_families() {
     assert!(missing.is_empty(), "missing Korean picker glyphs: {}", missing.join(", "));
 }
 
+/// The production font chain covers alphanumeric ASCII in proportional and monospace, plus ⌘ ⇧ ↩ … − in proportional and ⇧ in monospace.
 #[test]
 fn production_font_chain_covers_latin_and_shortcut_symbols() {
     // Exercise the same chain the app installs: the workspace egui dependency enables

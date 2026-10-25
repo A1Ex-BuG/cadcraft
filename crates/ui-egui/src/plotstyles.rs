@@ -41,6 +41,7 @@ pub fn dialog(app: &mut CadApp, ctx: &egui::Context, open: &mut bool) {
     }
 }
 
+/// Plot Style Manager window; returns the command (`stylesmanager` or `pagesetup`) to run after drawing.
 fn window(app: &mut CadApp, ctx: &egui::Context, open: &mut bool) -> Action {
     let t = Tokens::get();
     let title = crate::tl!("Plot Style Manager");

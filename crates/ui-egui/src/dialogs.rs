@@ -39,6 +39,7 @@ pub fn show(app: &mut CadApp, ctx: &egui::Context) {
     }
 }
 
+/// Drafting Settings window: snap/grid modes and spacing, isometric snap, polar tracking and object snaps, editing the session settings directly.
 fn dsettings(app: &mut CadApp, ctx: &egui::Context, open: &mut bool) {
     let settings = app.session.drafting_settings();
     let (mut snapunit, mut gridunit) = (settings.snapunit, settings.gridunit);
@@ -316,6 +317,7 @@ fn units(app: &mut CadApp, ctx: &egui::Context, open: &mut bool) {
     }
 }
 
+/// About window with About, Contributors and Models tabs, version, licence and project links.
 fn about(ctx: &egui::Context, open: &mut bool) {
     let t = Tokens::get();
     let tab_id = egui::Id::unique("about_tab");
@@ -353,6 +355,7 @@ fn about(ctx: &egui::Context, open: &mut bool) {
         });
 }
 
+/// Command Reference window; filters commands by id or label (English or translated) and starts the clicked command after closing the dialog.
 fn commands(app: &mut CadApp, ctx: &egui::Context, open: &mut bool) {
     let mut start = None;
     egui::Window::new(crate::tl!("Command Reference")).id(egui::Id::unique("Command Reference")).open(open).default_size(vec2(640.0, 480.0)).show(
@@ -393,6 +396,7 @@ fn commands(app: &mut CadApp, ctx: &egui::Context, open: &mut bool) {
     }
 }
 
+/// Blocks window listing named (non-anonymous) blocks; clicking one starts INSERT with that block name already supplied.
 fn blocks(app: &mut CadApp, ctx: &egui::Context, open: &mut bool) {
     let mut pick = None;
     egui::Window::new(crate::tl!("Blocks")).id(egui::Id::unique("Blocks")).open(open).default_size(vec2(320.0, 360.0)).show(ctx, |ui| {
@@ -424,6 +428,7 @@ fn insert_block(app: &mut CadApp, name: &str) {
     }
 }
 
+/// Interface Language combo; selecting a language runs `ui.language` with its code.
 fn language(app: &mut CadApp, ctx: &egui::Context, open: &mut bool) {
     egui::Window::new(crate::tl!("Interface Language")).id(egui::Id::unique("interface_language")).open(open).resizable(false).show(ctx, |ui| {
         egui::ComboBox::from_id_salt("interface_language_choice").selected_text(app.ui.interface_language.name()).show_ui(ui, |ui| {

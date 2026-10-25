@@ -405,6 +405,8 @@ pub fn dialog(app: &mut CadApp, ctx: &egui::Context, open: &mut bool) {
     }
 }
 
+/// One Layer Properties Manager row: status/name, on/freeze/lock/plot, colour, linetype, lineweight, transparency, viewport overrides, new-viewport freeze and description.
+/// Edits update `st` and push commands into `actions`.
 #[allow(clippy::too_many_arguments)]
 fn row(
     ui: &mut egui::Ui,

@@ -102,6 +102,7 @@ struct Widget {
     selected: Option<bool>,
 }
 
+/// egui temp-data key holding the widgets observed during the current frame.
 fn widgets_id() -> egui::Id {
     egui::Id::unique("cadcraft-observed-widgets")
 }
@@ -252,6 +253,7 @@ pub fn cmdline_state(app: &CadApp) -> Value {
     })
 }
 
+/// Build the `ui.inspect` snapshot: UI state and theme, animations, focus, canvas/window rects, view, cursor, snap, session summary, close prompt and performance counters.
 pub fn inspect(app: &CadApp, ctx: &egui::Context) -> Value {
     let r = ctx.content_rect();
     let view = app.session.state().map(|s| s.view()).ok();
@@ -554,12 +556,14 @@ fn private_shot_dir() -> std::io::Result<std::path::PathBuf> {
     DIR.get_or_init(|| create_private_shot_dir().map_err(|e| e.to_string())).clone().map_err(std::io::Error::other)
 }
 
+/// Process-wide monotonic counter used to keep pathless screenshot names unique.
 fn next_pathless_nonce() -> u64 {
     use std::sync::atomic::{AtomicU64, Ordering};
     static NEXT: AtomicU64 = AtomicU64::new(0);
     NEXT.fetch_add(1, Ordering::Relaxed)
 }
 
+/// Create at most 32 exclusive `cadcraft-shots-<pid>-<stamp>-<nonce>` directories in the temp dir; only `AlreadyExists` is retried.
 fn create_private_shot_dir() -> std::io::Result<std::path::PathBuf> {
     let base = std::env::temp_dir();
     let stamp = crate::now_ms().to_bits();
@@ -575,6 +579,7 @@ fn create_private_shot_dir() -> std::io::Result<std::path::PathBuf> {
     Err(std::io::Error::new(std::io::ErrorKind::AlreadyExists, "could not create a private screenshot directory"))
 }
 
+/// Create `path` with mode 0700 on Unix (plain create elsewhere), failing rather than following or reusing a pre-created entry.
 fn create_private_dir(path: &std::path::Path) -> std::io::Result<()> {
     #[cfg(unix)]
     {
@@ -600,6 +605,7 @@ fn create_private_file(path: &std::path::Path) -> std::io::Result<std::fs::File>
     options.open(path)
 }
 
+/// True when the metadata has no group/other permission bits (always true on non-Unix).
 fn is_private_shot_dir(meta: &std::fs::Metadata) -> bool {
     #[cfg(unix)]
     {
@@ -613,6 +619,7 @@ fn is_private_shot_dir(meta: &std::fs::Metadata) -> bool {
     }
 }
 
+/// Save a pathless screenshot into the private per-process directory: re-validate or recreate it as an owner-only real directory (0700 on Unix; plain create elsewhere), then create up to 64 exclusive files (0600 on Unix) and write a PNG.
 fn save_pathless_screenshot(img: &image::RgbaImage, token: u64) -> std::io::Result<std::path::PathBuf> {
     use std::io::Write as _;
     let dir = private_shot_dir()?;
@@ -725,6 +732,7 @@ mod tests {
         assert_eq!(pending.wait(Duration::ZERO), json!({"ok": true}));
     }
 
+    /// Two pathless saves with the same token produce distinct, decodable PNGs; on Unix the files are 0600 and their directory 0700.
     #[test]
     fn pathless_screenshots_are_unique_private_png_files() {
         let img = egui::ColorImage::filled([4, 3], egui::Color32::RED);
@@ -756,6 +764,7 @@ mod tests {
         }
     }
 
+    /// `create_new` refuses a pre-existing symlink with `AlreadyExists` and leaves the link target unchanged.
     #[cfg(unix)]
     #[test]
     fn private_screenshot_file_refuses_a_preexisting_symlink() {

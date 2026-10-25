@@ -54,6 +54,7 @@ pub(crate) struct SurfaceGeometry {
 }
 
 impl SurfaceGeometry {
+    /// `Some(size)` only when both axes are finite and strictly positive; rejects degenerate viewport sizes before they enter a `SurfaceGeometry` snapshot.
     fn valid_size(size: egui::Vec2) -> Option<egui::Vec2> {
         (size.x.is_finite() && size.y.is_finite() && size.x > 0.0 && size.y > 0.0).then_some(size)
     }
@@ -105,6 +106,8 @@ impl SurfaceGeometry {
         Some(Self { viewport, pixels_per_point, max_texture_side, minimized, occluded, window_focused })
     }
 
+    /// The pixel dimensions this surface would capture at: viewport points × pixels-per-point, rounded, each axis clamped to `max_texture_side` (0 means unlimited).
+    /// `None` when the viewport is unknown/non-finite or an axis overflows `usize`.
     fn expected_size(self) -> Option<[usize; 2]> {
         let viewport = self.viewport?;
         if !viewport.x.is_finite() || !viewport.y.is_finite() || viewport.x <= 0.0 || viewport.y <= 0.0 {
@@ -121,6 +124,7 @@ impl SurfaceGeometry {
         Some([axis(viewport.x)?, axis(viewport.y)?])
     }
 
+    /// Raw `Color32` bytes for `expected_size()` (4 bytes per pixel), with checked multiplication; `None` on overflow.
     fn expected_bytes(self) -> Option<usize> {
         let [width, height] = self.expected_size()?;
         width.checked_mul(height)?.checked_mul(std::mem::size_of::<egui::Color32>())
@@ -144,10 +148,12 @@ pub(crate) struct CaptureGeometry {
 }
 
 impl CaptureGeometry {
+    /// Pixel dimensions of the bound surface, or `None` when it cannot be estimated.
     fn expected_size(self) -> Option<[usize; 2]> {
         self.surface.expected_size()
     }
 
+    /// Raw image byte count of the bound surface, or `None` when it cannot be estimated.
     fn expected_bytes(self) -> Option<usize> {
         self.surface.expected_bytes()
     }
@@ -181,24 +187,29 @@ pub(crate) struct Shots {
 }
 
 impl Shots {
+    /// True when no queued, in-flight or completed-but-undrained request remains.
     pub(crate) fn is_empty(&self) -> bool {
         self.requests.is_empty()
     }
 
+    /// True when at least one admitted request has not been issued yet; drives the hidden-window repaint request.
     pub(crate) fn has_unissued(&self) -> bool {
         self.requests.iter().any(|shot| !shot.issued)
     }
 
+    /// Saturating sum of the byte reservations of all outstanding requests.
     fn reserved(&self) -> usize {
         self.requests.iter().fold(0usize, |sum, shot| sum.saturating_add(shot.reserved))
     }
 
+    /// Test-only count of outstanding request records.
     #[cfg(test)]
     fn len(&self) -> usize {
         self.requests.len()
     }
 }
 
+/// Advance the per-app request token, wrapping and skipping 0.
 fn next_token(shots: &mut Shots) -> u64 {
     let mut token = shots.token.wrapping_add(1);
     if token == 0 {
@@ -208,22 +219,27 @@ fn next_token(shots: &mut Shots) -> u64 {
     token
 }
 
+/// The JSON rejection envelope `{ok:false,error,request}` used by admission, issuance, drain and cancellation rejections; `control::save_screenshot` builds an identical envelope for its own failures.
 fn error_reply(token: u64, message: impl std::fmt::Display) -> Value {
     json!({"ok": false, "error": message.to_string(), "request": token})
 }
 
+/// Send an `error_reply` to `reply`; a closed receiver is ignored so admission never blocks.
 fn reject(reply: Sender<Value>, token: u64, message: impl std::fmt::Display) {
     let _ = reply.send(error_reply(token, message));
 }
 
+/// UID of the active drawing, or `None` when no drawing is open.
 fn active_document(app: &CadApp) -> Option<u64> {
     app.session.docs.get(app.session.active).map(|doc| doc.uid)
 }
 
+/// The widget egui currently reports as keyboard-focused, if any.
 fn current_focus(ctx: &egui::Context) -> Option<egui::Id> {
     ctx.memory(|memory| memory.focused())
 }
 
+/// Snapshot the active drawing UID, the monotonic document epoch and the focused widget together.
 fn observed_identity(app: &CadApp, ctx: &egui::Context) -> CaptureIdentity {
     CaptureIdentity { document: active_document(app), document_epoch: app.session.doc_epoch, focus: current_focus(ctx) }
 }
@@ -350,6 +366,7 @@ pub(crate) fn admit(app: &mut CadApp, ctx: &egui::Context, path: Option<String>,
     ctx.request_repaint();
 }
 
+/// Human-readable reason when the live document, focus or document epoch differs from the shot's admission identity; `None` while all still match.
 fn identity_reason(app: &CadApp, ctx: &egui::Context, shot: &Shot) -> Option<&'static str> {
     if active_document(app) != shot.identity.document {
         Some("the document changed while the capture was queued")
@@ -560,10 +577,12 @@ mod tests {
 
     use crate::Services;
 
+    /// An empty `CadApp` over a fresh `Session` for capture tests.
     fn app() -> CadApp {
         CadApp::new(Session::new(), Services::default())
     }
 
+    /// A visible, focused, 1-ppp surface of `size` with an 8192-pixel texture side.
     fn surface(size: egui::Vec2) -> SurfaceGeometry {
         SurfaceGeometry {
             viewport: Some(size),
@@ -583,6 +602,7 @@ mod tests {
         app.capture_identity_epoch = app.capture_identity_epoch.wrapping_add(1);
     }
 
+    /// Seed 800×600 geometry, admit one pathless request and return its reply receiver and token.
     fn admit_one(app: &mut CadApp, ctx: &egui::Context) -> (Receiver<Value>, u64) {
         set_geometry(app, ctx, egui::vec2(800.0, 600.0));
         let (tx, rx) = channel();
@@ -591,6 +611,7 @@ mod tests {
         (rx, token)
     }
 
+    /// Focused `RawInput` with a `width`×`height` screen rect and an 8192-pixel texture side.
     fn raw(width: f32, height: f32) -> egui::RawInput {
         egui::RawInput {
             screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(width, height))),
@@ -605,6 +626,7 @@ mod tests {
         ui_frame_sized(app, ctx, 800.0, 600.0)
     }
 
+    /// Run one real `logic` + `ui` pass at the requested size and drop texture deltas, yielding the frame's output.
     fn ui_frame_sized(app: &mut CadApp, ctx: &egui::Context, width: f32, height: f32) -> egui::FullOutput {
         let raw = raw(width, height);
         note_raw_geometry(app, ctx, &raw);
@@ -616,6 +638,7 @@ mod tests {
         out
     }
 
+    /// Every `ViewportCommand::Screenshot` callback emitted by a frame.
     fn screenshot_callbacks(out: &egui::FullOutput) -> Vec<egui::ScreenshotCallback> {
         out.viewport_output
             .values()
@@ -641,6 +664,7 @@ mod tests {
         (out, callbacks)
     }
 
+    /// Complete each screenshot callback with a solid red image of `size`.
     fn complete(callbacks: Vec<egui::ScreenshotCallback>, size: [usize; 2]) {
         let image = Arc::new(ColorImage::filled(size, Color32::RED));
         for callback in callbacks {
@@ -648,6 +672,7 @@ mod tests {
         }
     }
 
+    /// A completed-but-undrained shot still occupies a `MAX_REQUESTS` slot; the next admission is rejected as "outstanding" and no earlier token is replaced.
     #[test]
     fn admission_counts_completed_but_undrained_and_never_evicts() {
         let ctx = egui::Context::default();
@@ -666,6 +691,7 @@ mod tests {
         assert!(app.shots.requests.iter().all(|shot| shot.token != reply["request"].as_u64().unwrap_or_default()));
     }
 
+    /// A completed callback whose deadline has passed is rejected: the reply reports "timeout" and the request is removed from `Shots`; the test does not inspect the filesystem.
     #[test]
     fn deadline_is_checked_before_writing_a_completed_image() {
         let ctx = egui::Context::default();
@@ -683,6 +709,7 @@ mod tests {
         assert!(app.shots.is_empty());
     }
 
+    /// A drawing switch before issue rejects the queued request as "document changed" and empties the queue.
     #[test]
     fn document_change_cancels_before_issuing() {
         let ctx = egui::Context::default();
@@ -695,6 +722,7 @@ mod tests {
         assert!(app.shots.is_empty());
     }
 
+    /// Moving keyboard focus before issue rejects the queued capture as "focus changed" and empties the queue.
     #[test]
     fn focus_change_cancels_an_unissued_capture() {
         let ctx = egui::Context::default();
@@ -713,6 +741,7 @@ mod tests {
         assert!(app.shots.is_empty());
     }
 
+    /// Two requests issue from one settled frame; each reply carries its own token and a distinct, readable file with a PNG signature.
     #[test]
     fn issued_callbacks_reply_once_with_matching_tokens_and_distinct_pathless_files() {
         let ctx = egui::Context::default();
@@ -742,6 +771,7 @@ mod tests {
         assert!(app.shots.is_empty());
     }
 
+    /// A drawing switch while a capture is in flight rejects its completed callback as "document changed" and reports no result path.
     #[test]
     fn document_switch_after_issue_rejects_the_completed_callback_without_writing() {
         let ctx = egui::Context::default();
@@ -759,6 +789,7 @@ mod tests {
         assert!(app.shots.is_empty());
     }
 
+    /// Once a callback has completed but the deadline has passed, drain rejects it as "timeout" with no result path.
     #[test]
     fn completed_callback_after_timeout_writes_nothing() {
         let ctx = egui::Context::default();
@@ -774,6 +805,7 @@ mod tests {
         assert!(app.shots.is_empty());
     }
 
+    /// Cancelling all shots replies "cancelled" and wins over an already-completed callback, which is never reported.
     #[test]
     fn callback_completed_before_cancel_all_is_inert() {
         let ctx = egui::Context::default();
@@ -789,6 +821,7 @@ mod tests {
         assert!(app.shots.is_empty());
     }
 
+    /// A 5000×5000 image is rejected by the 64 MiB per-image bound; after two 2500×2500 admissions a third is rejected by the aggregate bound, leaving two queued.
     #[test]
     fn per_image_and_aggregate_budgets_reject_before_issue() {
         let ctx = egui::Context::default();
@@ -812,6 +845,7 @@ mod tests {
         assert_eq!(app.shots.len(), 2);
     }
 
+    /// Seed an arbitrary surface size, admit one pathless request and return the newly queued request's receiver and token.
     fn admit_one_at(app: &mut CadApp, ctx: &egui::Context, size: egui::Vec2) -> (Receiver<Value>, u64) {
         set_geometry(app, ctx, size);
         let (tx, rx) = channel();
@@ -820,6 +854,7 @@ mod tests {
         (rx, token)
     }
 
+    /// Every observed surface change, including A→B→A, bumps the surface epoch and retains the latest geometry.
     #[test]
     fn every_observed_geometry_change_bumps_the_generation() {
         let ctx = egui::Context::default();
@@ -861,6 +896,7 @@ mod tests {
         assert!(reply["error"].as_str().unwrap_or_default().contains("not known"), "{reply}");
     }
 
+    /// With a screen rect but no inner rect, 640×480 points at 2 ppp yields a `[1280, 960]` image and keeps the focused flag.
     #[test]
     fn raw_geometry_uses_screen_rect_when_inner_rect_is_absent() {
         let ctx = egui::Context::default();

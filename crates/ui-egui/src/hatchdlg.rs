@@ -478,6 +478,7 @@ pub fn dialog(app: &mut CadApp, ctx: &egui::Context, open: &mut bool) {
     }
 }
 
+/// Pattern/gradient fill selector and its controls; an origin pick is reported through `action`.
 fn fill_ui(ui: &mut egui::Ui, f: &mut Fill, action: &mut Action) {
     ui.horizontal(|ui| {
         ui.selectable_value(&mut f.gradient, false, crate::tl!("Pattern"));

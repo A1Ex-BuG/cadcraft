@@ -54,6 +54,7 @@ mod web {
                 bridge.report_dirty(&self.0, reported);
             }
         }
+        /// Forward raw input to the web `CadApp` and capture Tab at the command line.
         fn raw_input_hook(&mut self, ctx: &egui::Context, raw: &mut egui::RawInput) {
             self.0.raw_input_hook(ctx, raw);
             cadcraft_ui_egui::cmdline::capture_tab(ctx, raw);
@@ -66,6 +67,7 @@ mod web {
         fn persist_egui_memory(&self) -> bool {
             false
         }
+        /// On the first pass consume files dropped on the page, then delegate drawing to `CadApp::ui`.
         fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
             let first_pass = ui.ctx().current_pass_index() == 0;
             if first_pass {

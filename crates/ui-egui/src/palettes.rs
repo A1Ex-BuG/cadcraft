@@ -139,6 +139,7 @@ fn command_known(id: &str) -> bool {
     cadcraft_engine::find_command(id).is_some() || crate::menus::is_ui_command(id)
 }
 
+/// Tool Sets strip with Drafting/Modeling tabs, their command buttons and the collapse control.
 pub fn toolsets(app: &mut CadApp, ui: &mut egui::Ui) {
     let t = Tokens::get();
     egui::Frame::NONE.fill(t.panel).show(ui, |ui| {
@@ -338,6 +339,7 @@ pub fn toolsets_strip(app: &mut CadApp, ui: &mut egui::Ui) {
     });
 }
 
+/// Right palette panel (Layers/Blocks/Properties icon strip and collapse control) containing the Layers and Properties sections.
 pub fn right_palettes(app: &mut CadApp, ui: &mut egui::Ui) {
     if !app.ui.show_palettes {
         return;
@@ -514,6 +516,7 @@ pub(crate) fn layers_section(app: &mut CadApp, ui: &mut egui::Ui) {
     }
 }
 
+/// Properties row: a right-aligned translated label in a 106-point layout box that exposes a Label node to accessibility and names the control added by `add`.
 fn prop_row(ui: &mut egui::Ui, label: &str, add: impl FnOnce(&mut egui::Ui)) {
     let t = Tokens::get();
     ui.horizontal(|ui| {
@@ -702,6 +705,7 @@ fn properties_header(app: &mut CadApp, ui: &mut egui::Ui) {
     }
 }
 
+/// Properties palette: the selection's common properties, or the current defaults when nothing is selected; formats lengths per drawing units and dispatches setter commands.
 pub(crate) fn properties_section(app: &mut CadApp, ui: &mut egui::Ui) {
     let t = Tokens::get();
     properties_header(app, ui);

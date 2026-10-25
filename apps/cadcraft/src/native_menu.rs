@@ -33,6 +33,7 @@ fn accel(sc: &str) -> Option<Accelerator> {
 }
 
 impl NativeMenu {
+    /// Build and register the macOS menu (app menu, Settings and the translated command tree); returns the state holding item ids and submenus.
     pub fn install(app: &mut CadApp) -> Self {
         let menu = Menu::new();
         let mut items = HashMap::new();
@@ -90,6 +91,7 @@ impl NativeMenu {
         build(&sub, &menus::recent_entries(app), &mut self.items, &mut self.submenus, &mut self.counter, self.language);
     }
 
+    /// Drain queued menu events into commands (Discord opens externally), rebuild Open Recent, retranslate on a language change and refresh enablement when 300 ms have elapsed.
     pub fn poll(&mut self, app: &mut CadApp, ctx: &egui::Context) {
         while let Ok(ev) = MenuEvent::receiver().try_recv() {
             if let Some((cmd, _, _)) = self.items.get(ev.id.as_ref()) {
@@ -165,6 +167,7 @@ fn build(
 mod tests {
     use super::refresh_due;
 
+    /// `refresh_due` treats `NEG_INFINITY` as due at any finite time and `0.0` as due once 300 ms have elapsed; `install` initializes a fresh menu with `last_refresh = NEG_INFINITY`.
     #[test]
     fn the_first_poll_refreshes_immediately() {
         assert!(refresh_due(0.5, f64::NEG_INFINITY), "a fresh menu refreshes on its first poll");

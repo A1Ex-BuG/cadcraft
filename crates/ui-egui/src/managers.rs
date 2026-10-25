@@ -96,6 +96,7 @@ fn no_drawing(ctx: &egui::Context, title: &str, open: &mut bool) {
 
 // ---------- Linetype Manager ----------
 
+/// Linetype Manager: current linetype and global scale, loaded linetypes, and load/current actions; returns the command to run after drawing.
 fn linetype(app: &mut CadApp, ctx: &egui::Context, open: &mut bool) -> Action {
     let t = Tokens::get();
     let Ok(d) = app.session.doc() else {
@@ -242,6 +243,7 @@ fn draw_point(p: &egui::Painter, c: egui::Pos2, r: f32, mode: i64, stroke: Strok
     }
 }
 
+/// Point Style dialog for the PDMODE/PDSIZE presets; returns the `ddptype` action.
 fn point_style(app: &mut CadApp, ctx: &egui::Context, open: &mut bool) -> Action {
     let t = Tokens::get();
     let Ok(d) = app.session.doc() else {
@@ -468,6 +470,7 @@ fn style_manager(ctx: &egui::Context, open: &mut bool, title: &str, cmd: &'stati
 
 // ---------- Page Setup Manager ----------
 
+/// Page Setup Manager over layouts sorted by tab order; returns the selected setup command.
 fn page_setup(app: &mut CadApp, ctx: &egui::Context, open: &mut bool) -> Action {
     let t = Tokens::get();
     let Ok(d) = app.session.doc() else {
@@ -1077,6 +1080,7 @@ fn sheet_sketch(ui: &mut egui::Ui, page: &cadcraft_doc::PageSetup, t: &Tokens) {
 
 // ---------- Constraint Settings ----------
 
+/// Constraint Settings dialog editing the drawing's parametric settings; returns the `constraintsettings` action.
 fn constraint_settings(app: &mut CadApp, ctx: &egui::Context, open: &mut bool) -> Action {
     let t = Tokens::get();
     let Ok(d) = app.session.doc() else {

@@ -11,6 +11,7 @@ use egui_kittest::Harness;
 use egui_kittest::kittest::{NodeT, Queryable};
 use serde_json::json;
 
+/// A 1400×900 kittest harness whose frame runs `logic` and then `ui` on the supplied app.
 fn harness(app: CadApp) -> Harness<'static, CadApp> {
     Harness::builder().with_size(egui::vec2(1400.0, 900.0)).build_ui_state(
         |ui, app: &mut CadApp| {
@@ -38,6 +39,7 @@ fn unnamed_text_inputs(h: &Harness<'_, CadApp>) -> Vec<String> {
         .collect()
 }
 
+/// The Options ▸ Files autosave path field is labelled by its visible row label, and no text input in the dialog is unnamed.
 #[test]
 fn options_autosave_path_has_a_semantic_label() {
     let mut app = CadApp::new(Session::new(), Services::default());

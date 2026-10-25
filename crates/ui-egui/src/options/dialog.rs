@@ -136,6 +136,7 @@ fn preview_square(ui: &mut egui::Ui, side: f32, color: Color32) {
     p.rect_stroke(egui::Rect::from_center_size(rect.center(), vec2(side, side)), 0.0, Stroke::new(2.0, color), egui::StrokeKind::Middle);
 }
 
+/// Display tab: interface theme, animation preference and scale, drawing-area colours, crosshair size, history length and the system-cursor option; edits accumulate in `changes`.
 fn display(app: &CadApp, ui: &mut egui::Ui, changes: &mut Map<String, Value>) {
     grid(ui, "options_display", |ui| {
         let theme_caption = ui.label(crate::tl!("Interface theme"));
@@ -213,6 +214,7 @@ fn display(app: &CadApp, ui: &mut egui::Ui, changes: &mut Map<String, Value>) {
     hint(ui, crate::tl!("Screen magnifiers, screen readers and recorders follow the system cursor."));
 }
 
+/// Files tab: save format and default version, new-drawing units, autosave interval and autosave file location; edits accumulate in `changes`.
 fn files(app: &CadApp, ui: &mut egui::Ui, changes: &mut Map<String, Value>) {
     grid(ui, "options_files", |ui| {
         ui.label(crate::tl!("Save new drawings as"));
@@ -289,6 +291,7 @@ fn files(app: &CadApp, ui: &mut egui::Ui, changes: &mut Map<String, Value>) {
     hint(ui, crate::tl!("Drawings with no file yet are saved in the default version. 0 minutes turns automatic save off."));
 }
 
+/// Drafting tab: object-snap marker size and aperture previews plus the Drafting Settings entry; edits accumulate in `changes` and the entry may request a command through `start`.
 fn drafting(app: &CadApp, ui: &mut egui::Ui, changes: &mut Map<String, Value>, start: &mut Option<&'static str>) {
     let t = Tokens::get();
     grid(ui, "options_drafting", |ui| {
@@ -326,6 +329,7 @@ fn drafting(app: &CadApp, ui: &mut egui::Ui, changes: &mut Map<String, Value>, s
     });
 }
 
+/// Selection tab: pickbox and selection-mode controls, selection preview/area effects and the Visual Effect Settings window; edits accumulate in `changes`.
 fn selection(app: &CadApp, ui: &mut egui::Ui, changes: &mut Map<String, Value>) {
     let t = Tokens::get();
     let st = &app.session.settings;
@@ -427,6 +431,7 @@ fn selection(app: &CadApp, ui: &mut egui::Ui, changes: &mut Map<String, Value>) 
 /// Whether the Visual Effect Settings window is open (egui temp data).
 const VISUAL_EFFECTS: &str = "cc_options_visual_effects";
 
+/// Strong (bold) label for section headings in the Options Selection tab and the Visual Effect Settings window.
 fn heading(ui: &mut egui::Ui, text: &str) -> egui::Response {
     ui.label(RichText::new(text).strong())
 }
@@ -509,6 +514,7 @@ fn aci_row(ui: &mut egui::Ui, current: u8, key: &str, changes: &mut Map<String, 
     });
 }
 
+/// Preferences tab: interface language, largest-array limit and time-sensitive right-click; edits accumulate in `changes`.
 fn preferences(app: &CadApp, ui: &mut egui::Ui, changes: &mut Map<String, Value>) {
     grid(ui, "options_preferences", |ui| {
         let language_caption = ui.label(crate::tl!("Interface language"));

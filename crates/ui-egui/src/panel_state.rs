@@ -35,10 +35,12 @@ pub(crate) fn migrate(ui: &egui::Ui) {
 mod tests {
     use super::*;
 
+    /// Test panel state `width` points wide and 26 points high.
     fn state(width: f32) -> egui::PanelState {
         egui::PanelState { outer_rect: egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(width, 26.0)) }
     }
 
+    /// `migrate` copies the old root-id panel state into the 0.37 scoped key and leaves the old key in place for rollback.
     #[test]
     fn old_key_is_copied_to_the_scoped_key_once() {
         let ctx = egui::Context::default();
@@ -57,6 +59,7 @@ mod tests {
         assert_eq!(egui::PanelState::load(&ctx, old).map(|state| state.size().x), Some(41.0), "the old key is kept for rollback");
     }
 
+    /// `migrate` never replaces a value already stored under the new scoped key.
     #[test]
     fn a_new_key_is_never_overwritten() {
         let ctx = egui::Context::default();

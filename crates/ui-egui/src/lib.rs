@@ -276,6 +276,7 @@ pub struct CadApp {
 }
 
 impl CadApp {
+    /// Construct `CadApp` from a session and services with default UI state, options, canvas and command line; no control channel, capture geometry or pending shots are installed.
     pub fn new(session: Session, services: Services) -> Self {
         CadApp {
             system_languages: Vec::new(),
@@ -741,6 +742,7 @@ impl CadApp {
         }
     }
 
+    /// Draw one UI pass: title/toolbar, optional menu/status bar/file tabs, the standalone tool-set strip when a drawing is shown but Tool Sets is not docked, docking or the start page, and the floating overlays; record `frame_ms`. Runs on every pass, including one egui later discards.
     fn draw(&mut self, ui: &mut egui::Ui) {
         let t0 = now_ms();
         control::begin_frame(ui.ctx());
@@ -775,6 +777,7 @@ impl CadApp {
         self.frame_ms = now_ms() - t0;
     }
 
+    /// Drain each queued control request at most once (timed-out requests are skipped), dispatch it to `control::handle` or `capture::admit`, note the resulting capture identity and request a repaint.
     fn drain_control(&mut self, ctx: &egui::Context) {
         let Some(rx) = self.control_rx.take() else { return };
         while let Ok(req) = rx.try_recv() {
@@ -899,6 +902,7 @@ mod tests {
         assert_eq!(reply["ok"], true, "{reply}");
     }
 
+    /// A hidden logic-only tick runs no frame-only work: `ui_frames` stays 0 and fonts are not installed; a real `Ui` pass advances both.
     #[test]
     fn hidden_logic_does_not_run_frame_only_work() {
         let mut a = app();
@@ -912,6 +916,7 @@ mod tests {
         assert!(a.fonts_language.is_some());
     }
 
+    /// Repeated hidden logic-only ticks finish a long Lisp routine (`CC-HIDDEN` reaches 400000) while `ui_frames` stays 0.
     #[test]
     fn hidden_logic_advances_a_long_lisp_routine_without_a_ui_pass() {
         use cadcraft_engine::lisp::value::Value;
@@ -936,6 +941,7 @@ mod tests {
         assert_eq!(a.ui_frames, 0, "no frame was painted");
     }
 
+    /// An injected synthetic event batch is delivered by the first raw hook, a second raw hook before a real `Ui` pass adds nothing, and a new batch is accepted after that pass.
     #[test]
     fn one_synthetic_batch_waits_for_a_real_ui_pass() {
         let mut a = app();
