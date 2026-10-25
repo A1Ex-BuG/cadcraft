@@ -53,7 +53,9 @@ encoding_rs = "0.8.35"
 quick-xml = "0.42"
 
 # ui
-craft-ui = { version = "0.1.0", git = "https://github.com/storytold/craft-libs", rev = "25da1314d443171b4adeaad2cd9454b273f35c6f", features = ["serde"] }
+# 650b1c0 is the reviewed craft-libs integration: 25da's egui-0.37 port plus 6e7f's
+# shared docking `Workspace`/`DockCommand`. Raw 6e7f is egui 0.36 and is not consumable here.
+craft-ui = { version = "0.1.0", git = "https://github.com/storytold/craft-libs", rev = "650b1c0b058017c4eb3af06d5b39586d6732e07b", features = ["serde"] }
 egui = { version = "0.37", default-features = false, features = ["default_fonts", "monochrome_emoji_fonts"] }
 egui_kittest = "0.37"
 eframe = { version = "0.37", default-features = false }
