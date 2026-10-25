@@ -4,7 +4,7 @@ use cadcraft_doc::{EntityKind, Handle};
 use cadcraft_geom::{Segment, Vec2};
 use serde_json::{Value, json};
 
-use super::{CommandSpec, bad, bool_or, point_param, points_param, str_param, targets};
+use super::{CommandSpec, always, bad, bool_or, point_param, points_param, str_param, targets};
 
 use crate::{Accept, Input, Interactive, Prompt, Result, Session, Step};
 
@@ -553,7 +553,7 @@ impl Interactive for AngleM {
 
 #[cfg(test)]
 mod tests {
-    use super::{CommandSpec, bad, bool_or, point_param, points_param, str_param, targets};
+    use super::*;
 
     #[test]
     fn calculator() {
