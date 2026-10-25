@@ -12,7 +12,6 @@ use serde_json::Value;
 use super::super::machines::number;
 use super::added;
 use super::curves::MAX_GEN;
-use super::machines::number;
 use super::{CommandSpec, line, lwpoly, point_param, point_req, size_param, str_param};
 
 use crate::cmd::modify2::as_lwpoly;
